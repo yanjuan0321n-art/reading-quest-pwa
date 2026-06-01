@@ -1,4 +1,5 @@
-const STORAGE_KEY = "reading-quest-progress-v1";
+const LESSON_BANK_URL = "./sentence-lesson-bank.json";
+const STORAGE_KEY = "reading-quest-progress-v2";
 const CUSTOM_KEY = "reading-quest-custom-article-v1";
 const FONT_SIZE_KEY = "reading-quest-lesson-font-size-v1";
 const FONT_SIZE_STEPS = [0.92, 1, 1.12, 1.24];
@@ -232,8 +233,12 @@ async function init() {
   applyLessonFontSize();
 
   try {
-    const lessonBank = await fetch("./lesson-bank.json").then((response) => response.json());
-    state.baseCourses = lessonBank.map((article) => buildCourse(article, lessonBank));
+    const response = await fetch(LESSON_BANK_URL);
+    if (!response.ok) throw new Error(`Unable to load ${LESSON_BANK_URL}`);
+
+    const lessonBank = await response.json();
+    const articles = normalizeLessonBank(lessonBank);
+    state.baseCourses = articles.map((article) => buildCourse(article, articles));
     state.courses = [...state.baseCourses];
 
     state.activeArticleId = state.courses[0]?.id || null;
@@ -242,9 +247,17 @@ async function init() {
     renderCurrentArticle();
     setScreen("map");
   } catch (error) {
-    showToast("题库加载失败，请确认 lesson-bank.json 可以访问。");
+    showToast("题库加载失败，请确认 sentence-lesson-bank.json 可以访问。");
     console.error(error);
   }
+}
+
+function normalizeLessonBank(lessonBank) {
+  if (Array.isArray(lessonBank)) return lessonBank;
+  if (Array.isArray(lessonBank?.articles)) return lessonBank.articles;
+  if (Array.isArray(lessonBank?.courses)) return lessonBank.courses;
+  if (Array.isArray(lessonBank?.lessons)) return lessonBank.lessons;
+  throw new Error("Lesson bank must be an array or contain articles/courses/lessons.");
 }
 
 function bindEvents() {
@@ -366,12 +379,37 @@ function loadSavedCustomArticle() {
 }
 
 function buildCourse(article, articlePool) {
+  if (Array.isArray(article.units) && article.units.length) {
+    return {
+      id: article.id,
+      order: article.order,
+      title: article.title || "Untitled Lesson",
+      type: article.type || "sentence_game_course",
+      unitMode: "sentence",
+      sourceImage: article.sourceImage || "",
+      articleText: article.articleText || article.units.map((unit) => unit.text).join("\n\n"),
+      originalQuestions: article.units.flatMap((unit) => unit.exercises || []),
+      paragraphs: article.units.map((unit, index) => ({
+        id: unit.id,
+        index: unit.index || index + 1,
+        title: unit.title || `Unit ${index + 1}`,
+        text: unit.text || (unit.sentences || []).map((sentence) => sentence.text).join(" "),
+        summaryZh: unit.summaryZh || "",
+        vocabulary: unit.vocabulary || [],
+        granularity: unit.granularity || "single_sentence",
+        parentSegmentTitle: unit.parentSegmentTitle || "",
+        challenges: (unit.exercises || []).map((exercise) => mapBankExerciseToChallenge(exercise))
+      }))
+    };
+  }
+
   if (Array.isArray(article.segments) && article.segments.length) {
     return {
       id: article.id,
       order: article.order,
       title: article.title || "Untitled Lesson",
       type: article.type || "reading_game_course",
+      unitMode: "paragraph",
       sourceImage: article.sourceImage || "",
       articleText: article.articleText || article.segments.map((segment) => segment.text).join("\n\n"),
       originalQuestions: article.segments.flatMap((segment) => segment.exercises || []),
@@ -403,6 +441,7 @@ function buildCourse(article, articlePool) {
     order: article.order,
     title: article.title || "Untitled Article",
     type: article.type || "reading",
+    unitMode: "paragraph",
     sourceImage: article.sourceImage || "",
     articleText: article.articleText || paragraphTexts.join("\n\n"),
     originalQuestions: article.questions || [],
@@ -752,7 +791,8 @@ function renderStats() {
 function renderCurrentArticle() {
   const article = getActiveArticle();
   if (!article) return;
-  els.articleKicker.textContent = article.type === "custom_reading" ? "自定义课程" : "本地题库";
+  els.articleKicker.textContent =
+    article.type === "custom_reading" ? "自定义课程" : article.unitMode === "sentence" ? "句子级题库" : "本地题库";
   els.articleTitle.textContent = article.title;
   renderMap();
 }
@@ -765,12 +805,16 @@ function renderMap() {
   const percent = Math.round((completed.size / article.paragraphs.length) * 100);
   const nextIndex = article.paragraphs.findIndex((_, index) => !completed.has(index));
   const heroIndex = nextIndex === -1 ? article.paragraphs.length : nextIndex + 1;
-  els.paragraphCount.textContent = `${article.paragraphs.length} 段`;
+  const unitLabel = getUnitLabel(article);
+  const unitCopy = getUnitCopy(article);
+  els.paragraphCount.textContent = `${article.paragraphs.length} ${unitLabel}`;
   els.courseProgressText.textContent = `${percent}% 完成`;
   els.courseProgressBar.style.width = `${percent}%`;
   els.courseHeroTitle.textContent = article.title;
   els.courseHeroText.textContent =
-    nextIndex === -1 ? "整篇文章已完成，可以重练巩固。" : `下一关：第 ${heroIndex} 段 · ${article.paragraphs.length} 段课程`;
+    nextIndex === -1
+      ? "整篇文章已完成，可以重练巩固。"
+      : `下一关：第 ${heroIndex} ${unitCopy} · ${article.paragraphs.length} ${unitLabel}课程`;
   els.profileCourseTitle.textContent = article.title;
 
   els.levelMap.innerHTML = article.paragraphs
@@ -793,6 +837,7 @@ function renderMap() {
             <div class="level-meta">
               <span class="type-pill">词汇</span>
               <span class="type-pill">理解</span>
+              <span class="type-pill">${paragraph.challenges.length}题</span>
               <span class="level-start">${actionLabel}</span>
             </div>
           </div>
@@ -834,6 +879,7 @@ function startLesson(paragraphIndex) {
 }
 
 function renderLesson() {
+  const article = getActiveArticle();
   const paragraph = getCurrentParagraph();
   if (!paragraph) return;
 
@@ -841,7 +887,7 @@ function renderLesson() {
   els.lessonProgressBar.style.width = `${(state.challengeIndex / total) * 100}%`;
   els.lessonStepText.textContent = `${state.challengeIndex + 1} / ${total}`;
   els.lessonXpText.textContent = `+${state.lessonStats?.xp || 0} XP`;
-  els.paragraphBadge.textContent = `段落 ${paragraph.index}`;
+  els.paragraphBadge.textContent = getUnitBadge(article, paragraph);
   els.paragraphText.textContent = paragraph.text;
   hideFeedback();
   renderChallenge();
@@ -1107,9 +1153,10 @@ function renderSummary(elapsedOverride) {
   const elapsed = elapsedOverride ?? Math.max(1, Math.round((Date.now() - stats.startTime) / 1000));
   const paragraphNumber = state.activeParagraphIndex + 1;
   const isLast = state.activeParagraphIndex >= article.paragraphs.length - 1;
+  const unitCopy = getUnitCopy(article);
 
   els.summaryTitle.textContent = `第 ${paragraphNumber} 关完成`;
-  els.summaryText.textContent = `你完成了 5 类段落练习。继续按段推进，整篇文章会变成一条清晰的学习路径。`;
+  els.summaryText.textContent = `你完成了 ${stats.answered} 道${unitCopy}练习。继续闯关，整篇文章会变成一条清晰的学习路径。`;
   els.summaryCorrect.textContent = `${stats.correct} / ${stats.answered}`;
   els.summaryXp.textContent = `+${stats.xp}`;
   els.summaryTime.textContent = `${elapsed}s`;
@@ -1177,6 +1224,20 @@ function getCurrentParagraph() {
 
 function getCurrentChallenge() {
   return getCurrentParagraph()?.challenges[state.challengeIndex] || null;
+}
+
+function getUnitLabel(article) {
+  return article?.unitMode === "sentence" ? "单元" : "段";
+}
+
+function getUnitCopy(article) {
+  return article?.unitMode === "sentence" ? "句子单元" : "段落";
+}
+
+function getUnitBadge(article, paragraph) {
+  if (article?.unitMode !== "sentence") return `段落 ${paragraph.index}`;
+  const label = paragraph.granularity === "sentence_group" ? "句组" : "句子";
+  return `${label} ${paragraph.index}`;
 }
 
 function getCompletedSet(articleId) {

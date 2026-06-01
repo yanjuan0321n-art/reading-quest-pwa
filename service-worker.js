@@ -1,10 +1,10 @@
-const CACHE_NAME = "reading-quest-v1";
+const CACHE_NAME = "reading-quest-v2";
 const APP_ASSETS = [
   "./",
   "./index.html",
   "./styles.css",
   "./app.js",
-  "./lesson-bank.json",
+  "./sentence-lesson-bank.json",
   "./manifest.webmanifest",
   "./assets/logo1.svg",
   "./assets/icon-192.png",

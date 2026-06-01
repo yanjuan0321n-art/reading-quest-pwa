@@ -1,7 +1,7 @@
 {
   "name": "英语分段阅读",
   "short_name": "分段阅读",
-  "description": "把英文文章变成分段闯关课程的阅读训练 App。",
+  "description": "把英文文章变成句子单元闯关课程的阅读训练 App。",
   "lang": "zh-CN",
   "start_url": "./",
   "scope": "./",
