@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="256px" height="256px" viewBox="0 0 256 256" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>画板</title>
+    <defs>
+        <linearGradient x1="-2.17391304%" y1="18.9206593%" x2="102.173913%" y2="83.5656879%" id="linearGradient-1">
+            <stop stop-color="#22C783" offset="0%"></stop>
+            <stop stop-color="#159BDF" offset="100%"></stop>
+        </linearGradient>
+    </defs>
+    <g id="画板" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <path d="M9,47.8188117 C9,36.9571297 23.9375,28.8108682 41.0089286,31.5262887 C79.4196429,35.5994194 107.160714,43.745681 128.5,57.3227835 C149.839286,43.745681 177.580357,35.5994194 215.991071,31.5262887 C233.0625,28.8108682 248,36.9571297 248,47.8188117 L248,182.232127 C248,190.378388 237.330357,197.16694 224.526786,198.52465 C188.25,201.240071 158.375,209.386332 134.901786,222.963435 C130.633929,225.678855 126.366071,225.678855 122.098214,222.963435 C98.625,209.386332 68.75,201.240071 32.4732143,198.52465 C19.6696429,197.16694 9,190.378388 9,182.232127 L9,47.8188117 Z" id="路径" fill="url(#linearGradient-1)" fill-rule="nonzero"></path>
+        <text id="妍娟" font-family="PingFangSC-Semibold, PingFang SC" font-size="94" font-weight="500" fill="#FFFFFF">
+            <tspan x="34" y="162">妍娟</tspan>
+        </text>
+    </g>
+</svg>

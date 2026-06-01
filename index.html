@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#18bd79" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="分段阅读" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <title>分段英语闯关</title>
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="icon" href="./assets/logo1.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="./assets/apple-touch-icon.png" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell" id="appShell">
+      <aside class="side-panel" aria-label="学习概览">
+        <div class="brand">
+          <div class="brand-mark" aria-hidden="true">
+            <img src="./assets/logo1.svg" alt="" />
+          </div>
+          <div>
+            <p class="eyebrow">Reading Quest</p>
+            <h1>英语分段阅读</h1>
+          </div>
+        </div>
+
+        <div class="course-picker">
+          <label class="field-label" for="articleSelect">选择本地文章</label>
+          <select id="articleSelect" class="select"></select>
+        </div>
+
+        <section class="import-panel" aria-labelledby="importTitle">
+          <div class="section-title">
+            <span class="title-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M12 3v12m0-12 4 4m-4-4-4 4M5 15v4h14v-4" /></svg>
+            </span>
+            <h2 id="importTitle">导入英文文章</h2>
+          </div>
+          <textarea
+            id="articleInput"
+            rows="7"
+            placeholder="粘贴一段英文文章。系统会按空行和句长拆成短段落，并用本地规则生成练习。"
+          ></textarea>
+          <button id="buildCustomBtn" class="primary-btn" type="button">
+            <span class="btn-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+            </span>
+            生成闯关
+          </button>
+          <p class="hint">MVP 不使用实时 AI；固定题库和答案键来自本地 JSON。</p>
+        </section>
+
+        <div class="mini-roadmap" aria-label="MVP 范围">
+          <span>本地 JSON</span>
+          <span>分段关卡</span>
+          <span>即时反馈</span>
+          <span>总结页</span>
+        </div>
+      </aside>
+
+      <main class="main-stage">
+        <header class="top-bar">
+          <button id="backToMapBtn" class="ghost-btn hidden" type="button" aria-label="返回关卡地图">
+            <span aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M15 18 9 12l6-6" /></svg>
+            </span>
+          </button>
+          <div class="article-meta">
+            <p id="articleKicker">本地题库</p>
+            <h2 id="articleTitle">加载中...</h2>
+          </div>
+          <button id="resetProgressBtn" class="icon-btn" type="button" aria-label="重置学习进度">
+            <svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7M3 4v6h6" /></svg>
+          </button>
+        </header>
+
+        <section id="mapScreen" class="screen active" aria-live="polite">
+          <div class="hero-band">
+            <div>
+              <div class="course-card-head">
+                <span>今日训练</span>
+                <strong>分段阅读闯关</strong>
+              </div>
+              <p class="eyebrow">当前课程</p>
+              <h2 id="courseHeroTitle">阅读闯关</h2>
+              <p id="courseHeroText">完成一段，解锁下一段。</p>
+            </div>
+            <div class="hero-visual" aria-hidden="true">
+              <div class="orbit orbit-one"></div>
+              <div class="orbit orbit-two"></div>
+              <img class="hero-logo" src="./assets/logo1.svg" alt="" />
+              <span class="daily-ring hero-ring">5</span>
+            </div>
+          </div>
+
+          <div class="map-toolbar">
+            <div>
+              <span id="paragraphCount">0 段</span>
+              <strong id="courseProgressText">0% 完成</strong>
+            </div>
+            <div class="progress-track" aria-label="整篇文章进度">
+              <div id="courseProgressBar" class="progress-fill"></div>
+            </div>
+          </div>
+
+          <div id="levelMap" class="level-map"></div>
+        </section>
+
+        <section id="profileScreen" class="screen profile-screen" aria-live="polite">
+          <div class="profile-hero">
+            <img src="./assets/logo1.svg" alt="" />
+            <div>
+              <p class="eyebrow">我的训练</p>
+              <h2>学习档案</h2>
+              <p>本地记录你的阅读闯关进度。</p>
+            </div>
+          </div>
+
+          <div class="stats-strip profile-stats">
+            <div>
+              <span class="stat-label">XP</span>
+              <strong id="totalXp">0</strong>
+            </div>
+            <div>
+              <span class="stat-label">连续</span>
+              <strong id="streakDays">1 天</strong>
+            </div>
+            <div>
+              <span class="stat-label">能量</span>
+              <strong id="heartCount">5</strong>
+            </div>
+            <div>
+              <span class="stat-label">学习时长</span>
+              <strong id="studyTimeText">0分</strong>
+            </div>
+          </div>
+
+          <div class="profile-list">
+            <div>
+              <span>当前训练</span>
+              <strong id="profileCourseTitle">阅读闯关</strong>
+            </div>
+            <div>
+              <span>学习方式</span>
+              <strong>分段 · 五类题型</strong>
+            </div>
+          </div>
+        </section>
+
+        <section id="lessonScreen" class="screen" aria-live="polite">
+          <div class="lesson-head">
+            <div class="progress-track" aria-label="当前关卡进度">
+              <div id="lessonProgressBar" class="progress-fill"></div>
+            </div>
+            <div class="font-controls" aria-label="调整答题字体大小">
+              <button id="decreaseFontBtn" type="button" aria-label="减小字体">A-</button>
+              <span id="fontSizeLabel">标准</span>
+              <button id="increaseFontBtn" type="button" aria-label="增大字体">A+</button>
+            </div>
+            <div class="lesson-counter">
+              <span id="lessonStepText">1 / 5</span>
+              <span id="lessonXpText">+0 XP</span>
+            </div>
+          </div>
+
+          <article class="reading-pane">
+            <div class="paragraph-badge" id="paragraphBadge">段落 1</div>
+            <p id="paragraphText"></p>
+          </article>
+
+          <article id="challengeCard" class="challenge-card"></article>
+
+          <div id="feedbackBar" class="feedback-bar hidden"></div>
+        </section>
+
+        <section id="summaryScreen" class="screen" aria-live="polite">
+          <div class="summary-panel">
+            <div class="summary-badge" aria-hidden="true">
+              <svg viewBox="0 0 96 96">
+                <circle cx="48" cy="48" r="42" fill="#ffcf4d" />
+                <path d="m31 50 11 11 25-29" fill="none" stroke="#2f3a4a" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+            </div>
+            <p class="eyebrow">关卡完成</p>
+            <h2 id="summaryTitle">Nice work</h2>
+            <p id="summaryText"></p>
+            <div class="summary-stats">
+              <div>
+                <span>正确</span>
+                <strong id="summaryCorrect">0</strong>
+              </div>
+              <div>
+                <span>本关 XP</span>
+                <strong id="summaryXp">0</strong>
+              </div>
+              <div>
+                <span>用时</span>
+                <strong id="summaryTime">0s</strong>
+              </div>
+            </div>
+            <div class="summary-actions">
+              <button id="nextLevelBtn" class="primary-btn" type="button">
+                <span class="btn-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+                </span>
+                下一关
+              </button>
+              <button id="summaryMapBtn" class="secondary-btn" type="button">回到地图</button>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <nav class="bottom-tabs" aria-label="底部导航">
+        <button id="tabQuest" class="tab-button active" type="button">
+          <span aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M4 13 12 5l8 8v7H4v-7Z" /></svg>
+          </span>
+          闯关
+        </button>
+        <button id="tabImport" class="tab-button" type="button">
+          <span aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M12 3v12m0-12 4 4m-4-4-4 4M5 15v4h14v-4" /></svg>
+          </span>
+          导入
+        </button>
+        <button id="tabMe" class="tab-button" type="button">
+          <span aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM4 21a8 8 0 0 1 16 0" /></svg>
+          </span>
+          我的
+        </button>
+      </nav>
+    </div>
+
+    <div id="toast" class="toast hidden" role="status"></div>
+
+    <script src="./app.js" type="module"></script>
+  </body>
+</html>
