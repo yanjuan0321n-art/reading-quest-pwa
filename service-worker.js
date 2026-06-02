@@ -1,4 +1,4 @@
-const CACHE_NAME = "reading-quest-v3";
+const CACHE_NAME = "reading-quest-v4";
 const APP_ASSETS = [
   "./",
   "./index.html",

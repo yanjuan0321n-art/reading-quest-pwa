@@ -756,8 +756,8 @@ textarea {
 
 .stat-card {
   position: relative;
-  min-height: 118px;
-  padding: 14px;
+  min-height: 86px;
+  padding: 14px 15px;
   overflow: hidden;
   background: #ffffff;
   border: 1px solid var(--line);
@@ -777,30 +777,6 @@ textarea {
   opacity: 0.08;
 }
 
-.stat-icon {
-  display: grid;
-  place-items: center;
-  width: 36px;
-  height: 36px;
-  margin-bottom: 12px;
-  color: inherit;
-  background: rgba(255, 255, 255, 0.76);
-  border-radius: 50%;
-}
-
-.stat-icon svg {
-  width: 21px;
-  height: 21px;
-}
-
-.stat-icon path {
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 2.2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
 .stat-label {
   display: block;
   color: rgba(36, 48, 66, 0.62);
@@ -810,10 +786,10 @@ textarea {
 
 .stat-card strong {
   display: block;
-  margin-top: 5px;
+  margin-top: 12px;
   overflow: hidden;
   color: var(--ink);
-  font-size: 1.28rem;
+  font-size: 1.34rem;
   line-height: 1.12;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -842,8 +818,9 @@ textarea {
 .month-weekdays,
 .month-grid {
   display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 7px;
+  grid-template-columns: repeat(7, 34px);
+  justify-content: space-between;
+  gap: 6px;
 }
 
 .month-weekdays span {
@@ -856,11 +833,12 @@ textarea {
 .month-day {
   display: grid;
   place-items: center;
-  aspect-ratio: 1;
+  width: 34px;
+  height: 34px;
   color: #4d5a6c;
   background: #f3f7fb;
   border: 1px solid #e1e9f0;
-  border-radius: 50%;
+  border-radius: 8px;
   font-size: 0.76rem;
   font-weight: 900;
 }
