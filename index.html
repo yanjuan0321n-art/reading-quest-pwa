@@ -11,7 +11,7 @@
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="icon" href="./assets/logo1.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="./assets/apple-touch-icon.png" />
-    <link rel="stylesheet" href="./styles.css" />
+    <link rel="stylesheet" href="./styles.css?v=20260602-ui2" />
   </head>
   <body>
     <div class="app-shell" id="appShell">
@@ -25,32 +25,6 @@
             <h1>英语分段阅读</h1>
           </div>
         </div>
-
-        <div class="course-picker">
-          <label class="field-label" for="articleSelect">选择题库课程</label>
-          <select id="articleSelect" class="select"></select>
-        </div>
-
-        <section class="import-panel" aria-labelledby="importTitle">
-          <div class="section-title">
-            <span class="title-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24"><path d="M12 3v12m0-12 4 4m-4-4-4 4M5 15v4h14v-4" /></svg>
-            </span>
-            <h2 id="importTitle">导入英文文章</h2>
-          </div>
-          <textarea
-            id="articleInput"
-            rows="7"
-            placeholder="粘贴一段英文文章。导入体验会按空行和句长拆成短段落，并用本地规则生成练习。"
-          ></textarea>
-          <button id="buildCustomBtn" class="primary-btn" type="button">
-            <span class="btn-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
-            </span>
-            生成闯关
-          </button>
-          <p class="hint">MVP 不使用实时 AI；默认题库来自本地 sentence-lesson-bank.json。</p>
-        </section>
 
         <div class="mini-roadmap" aria-label="MVP 范围">
           <span>本地 JSON</span>
@@ -118,35 +92,83 @@
             </div>
           </div>
 
-          <div class="stats-strip profile-stats">
-            <div>
+          <section class="profile-course-card" aria-labelledby="profileCourseHeading">
+            <div class="profile-course-head">
+              <div>
+                <p class="eyebrow">当前训练</p>
+                <h3 id="profileCourseHeading">阅读闯关</h3>
+              </div>
+              <span id="profileCourseCount">0 单元</span>
+            </div>
+            <label class="field-label" for="articleSelect">题库课程</label>
+            <select id="articleSelect" class="select"></select>
+            <div class="profile-course-progress">
+              <div>
+                <span id="profileCourseProgressText">0% 完成</span>
+                <strong id="profileCourseNextText">第 1 关</strong>
+              </div>
+              <div class="progress-track" aria-label="当前训练进度">
+                <div id="profileCourseProgressBar" class="progress-fill"></div>
+              </div>
+            </div>
+            <button id="profileStartBtn" class="primary-btn" type="button">
+              <span class="btn-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+              </span>
+              继续闯关
+            </button>
+          </section>
+
+          <div class="profile-stats">
+            <div class="stat-card xp-card">
+              <span class="stat-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="m12 3 2.7 5.6 6.2.9-4.5 4.4 1.1 6.2L12 17.2 6.5 20.1l1.1-6.2-4.5-4.4 6.2-.9L12 3Z" /></svg>
+              </span>
               <span class="stat-label">XP</span>
               <strong id="totalXp">0</strong>
             </div>
-            <div>
+            <div class="stat-card streak-card">
+              <span class="stat-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M13 2 6 13h6l-1 9 7-12h-6l1-8Z" /></svg>
+              </span>
               <span class="stat-label">连续</span>
               <strong id="streakDays">1 天</strong>
             </div>
-            <div>
+            <div class="stat-card energy-card">
+              <span class="stat-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M20.8 8.4c0 5.4-8.8 10.6-8.8 10.6S3.2 13.8 3.2 8.4A4.7 4.7 0 0 1 12 6a4.7 4.7 0 0 1 8.8 2.4Z" /></svg>
+              </span>
               <span class="stat-label">能量</span>
               <strong id="heartCount">5</strong>
             </div>
-            <div>
+            <div class="stat-card time-card">
+              <span class="stat-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M12 6v6l4 2M21 12a9 9 0 1 1-9-9 9 9 0 0 1 9 9Z" /></svg>
+              </span>
               <span class="stat-label">学习时长</span>
-              <strong id="studyTimeText">0分</strong>
+              <strong id="studyTimeText">0秒</strong>
             </div>
           </div>
 
-          <div class="profile-list">
-            <div>
-              <span>当前训练</span>
-              <strong id="profileCourseTitle">阅读闯关</strong>
+          <section class="month-card" aria-labelledby="monthLabel">
+            <div class="month-head">
+              <div>
+                <p class="eyebrow">月打卡</p>
+                <h3 id="monthLabel">本月</h3>
+              </div>
+              <span id="monthSummary">0 天完成</span>
             </div>
-            <div>
-              <span>学习方式</span>
-              <strong>句子单元 · 五类题型</strong>
+            <div class="month-weekdays" aria-hidden="true">
+              <span>一</span>
+              <span>二</span>
+              <span>三</span>
+              <span>四</span>
+              <span>五</span>
+              <span>六</span>
+              <span>日</span>
             </div>
-          </div>
+            <div id="monthGrid" class="month-grid" aria-label="本月学习打卡"></div>
+          </section>
         </section>
 
         <section id="lessonScreen" class="screen" aria-live="polite">
@@ -172,7 +194,7 @@
 
           <article id="challengeCard" class="challenge-card"></article>
 
-          <div id="feedbackBar" class="feedback-bar hidden"></div>
+          <div id="feedbackBar" class="feedback-bar hidden" role="status"></div>
         </section>
 
         <section id="summaryScreen" class="screen" aria-live="polite">
@@ -216,19 +238,13 @@
       <nav class="bottom-tabs" aria-label="底部导航">
         <button id="tabQuest" class="tab-button active" type="button">
           <span aria-hidden="true">
-            <svg viewBox="0 0 24 24"><path d="M4 13 12 5l8 8v7H4v-7Z" /></svg>
+            <svg viewBox="0 0 24 24"><path d="M5 19V7.5l5-2.5 5 2.5 4-2v11.5l-4 2-5-2.5-5 2.5Z" /><path d="M10 5v12.5M15 7.5V19" /></svg>
           </span>
           闯关
         </button>
-        <button id="tabImport" class="tab-button" type="button">
-          <span aria-hidden="true">
-            <svg viewBox="0 0 24 24"><path d="M12 3v12m0-12 4 4m-4-4-4 4M5 15v4h14v-4" /></svg>
-          </span>
-          导入
-        </button>
         <button id="tabMe" class="tab-button" type="button">
           <span aria-hidden="true">
-            <svg viewBox="0 0 24 24"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM4 21a8 8 0 0 1 16 0" /></svg>
+            <svg viewBox="0 0 24 24"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z" /><path d="M4.5 21a7.5 7.5 0 0 1 15 0" /><path d="M18 5.5h2.5M19.25 4.25v2.5" /></svg>
           </span>
           我的
         </button>
@@ -237,6 +253,6 @@
 
     <div id="toast" class="toast hidden" role="status"></div>
 
-    <script src="./app.js" type="module"></script>
+    <script src="./app.js?v=20260602-ui2" type="module"></script>
   </body>
 </html>

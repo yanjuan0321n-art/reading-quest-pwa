@@ -1,9 +1,9 @@
 const LESSON_BANK_URL = "./sentence-lesson-bank.json";
 const STORAGE_KEY = "reading-quest-progress-v2";
-const CUSTOM_KEY = "reading-quest-custom-article-v1";
 const FONT_SIZE_KEY = "reading-quest-lesson-font-size-v1";
 const FONT_SIZE_STEPS = [0.92, 1, 1.12, 1.24];
 const FONT_SIZE_LABELS = ["小", "标准", "大", "特大"];
+const FEEDBACK_DURATION_MS = 3200;
 
 const els = {
   totalXp: document.querySelector("#totalXp"),
@@ -11,8 +11,6 @@ const els = {
   heartCount: document.querySelector("#heartCount"),
   studyTimeText: document.querySelector("#studyTimeText"),
   articleSelect: document.querySelector("#articleSelect"),
-  articleInput: document.querySelector("#articleInput"),
-  buildCustomBtn: document.querySelector("#buildCustomBtn"),
   backToMapBtn: document.querySelector("#backToMapBtn"),
   resetProgressBtn: document.querySelector("#resetProgressBtn"),
   articleKicker: document.querySelector("#articleKicker"),
@@ -26,7 +24,12 @@ const els = {
   courseProgressBar: document.querySelector("#courseProgressBar"),
   courseHeroTitle: document.querySelector("#courseHeroTitle"),
   courseHeroText: document.querySelector("#courseHeroText"),
-  profileCourseTitle: document.querySelector("#profileCourseTitle"),
+  profileCourseHeading: document.querySelector("#profileCourseHeading"),
+  profileCourseCount: document.querySelector("#profileCourseCount"),
+  profileCourseProgressText: document.querySelector("#profileCourseProgressText"),
+  profileCourseNextText: document.querySelector("#profileCourseNextText"),
+  profileCourseProgressBar: document.querySelector("#profileCourseProgressBar"),
+  profileStartBtn: document.querySelector("#profileStartBtn"),
   levelMap: document.querySelector("#levelMap"),
   lessonProgressBar: document.querySelector("#lessonProgressBar"),
   lessonStepText: document.querySelector("#lessonStepText"),
@@ -46,8 +49,10 @@ const els = {
   nextLevelBtn: document.querySelector("#nextLevelBtn"),
   summaryMapBtn: document.querySelector("#summaryMapBtn"),
   tabQuest: document.querySelector("#tabQuest"),
-  tabImport: document.querySelector("#tabImport"),
   tabMe: document.querySelector("#tabMe"),
+  monthLabel: document.querySelector("#monthLabel"),
+  monthSummary: document.querySelector("#monthSummary"),
+  monthGrid: document.querySelector("#monthGrid"),
   toast: document.querySelector("#toast")
 };
 
@@ -198,6 +203,7 @@ const state = {
   selectedChoiceIndex: null,
   orderSelection: [],
   currentResult: null,
+  feedbackTimer: null,
   lessonStats: null,
   fontSizeIndex: loadFontSizeIndex(),
   progress: loadProgress()
@@ -217,10 +223,22 @@ function loadProgress() {
       streak: Number(saved?.streak) || 1,
       hearts: Number(saved?.hearts) || 5,
       studySeconds: Number(saved?.studySeconds) || 0,
-      completed: saved?.completed && typeof saved.completed === "object" ? saved.completed : {}
+      completed: saved?.completed && typeof saved.completed === "object" ? saved.completed : {},
+      lessonResults: saved?.lessonResults && typeof saved.lessonResults === "object" ? saved.lessonResults : {},
+      checkins: saved?.checkins && typeof saved.checkins === "object" ? saved.checkins : {},
+      lastStudyDate: typeof saved?.lastStudyDate === "string" ? saved.lastStudyDate : ""
     };
   } catch {
-    return { xp: 0, streak: 1, hearts: 5, studySeconds: 0, completed: {} };
+    return {
+      xp: 0,
+      streak: 1,
+      hearts: 5,
+      studySeconds: 0,
+      completed: {},
+      lessonResults: {},
+      checkins: {},
+      lastStudyDate: ""
+    };
   }
 }
 
@@ -269,37 +287,6 @@ function bindEvents() {
     setScreen("map");
   });
 
-  els.buildCustomBtn.addEventListener("click", () => {
-    const text = els.articleInput.value.trim();
-    if (countWords(text) < 30) {
-      showToast("文章太短了，建议至少粘贴 30 个英文词。");
-      return;
-    }
-
-    const customArticle = {
-      id: "custom_article",
-      order: 0,
-      title: "我的自定义课程",
-      type: "custom_reading",
-      articleText: text,
-      paragraphs: splitIntoLearningParagraphs(text).map((paragraph, index) => ({
-        index: index + 1,
-        text: paragraph
-      })),
-      questions: []
-    };
-
-    localStorage.setItem(CUSTOM_KEY, JSON.stringify(customArticle));
-    state.progress.completed[customArticle.id] = [];
-    saveProgress();
-    state.courses = [buildCourse(customArticle, [customArticle, ...state.baseCourses]), ...state.baseCourses];
-    state.activeArticleId = customArticle.id;
-    renderArticleSelect();
-    renderCurrentArticle();
-    setScreen("map");
-    showToast("已生成分段闯关。");
-  });
-
   els.backToMapBtn.addEventListener("click", () => {
     setScreen("map");
     renderMap();
@@ -308,7 +295,16 @@ function bindEvents() {
   els.resetProgressBtn.addEventListener("click", () => {
     const confirmed = window.confirm("确定重置 XP、能量和所有关卡进度吗？");
     if (!confirmed) return;
-    state.progress = { xp: 0, streak: 1, hearts: 5, studySeconds: 0, completed: {} };
+    state.progress = {
+      xp: 0,
+      streak: 1,
+      hearts: 5,
+      studySeconds: 0,
+      completed: {},
+      lessonResults: {},
+      checkins: {},
+      lastStudyDate: ""
+    };
     saveProgress();
     renderStats();
     renderCurrentArticle();
@@ -344,38 +340,16 @@ function bindEvents() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   });
 
-  els.tabImport.addEventListener("click", () => {
-    setScreen("map");
-    setActiveTab("import");
-    document.querySelector(".import-panel")?.scrollIntoView({ behavior: "smooth", block: "center" });
-    window.setTimeout(() => els.articleInput.focus(), 350);
-  });
-
   els.tabMe.addEventListener("click", () => {
     setScreen("profile");
     window.scrollTo({ top: 0, behavior: "smooth" });
   });
-}
 
-function applyAnswerKey(article, answerKey) {
-  const articleKey = answerKey?.[article.id] || {};
-  return {
-    ...article,
-    questions: (article.questions || []).map((question) => ({
-      ...question,
-      answer: question.answer || articleKey[String(question.number)] || null
-    }))
-  };
-}
-
-function loadSavedCustomArticle() {
-  try {
-    const article = JSON.parse(localStorage.getItem(CUSTOM_KEY));
-    if (!article?.articleText) return null;
-    return { ...article, title: "我的自定义课程" };
-  } catch {
-    return null;
-  }
+  els.profileStartBtn.addEventListener("click", () => {
+    setScreen("map");
+    setActiveTab("quest");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  });
 }
 
 function buildCourse(article, articlePool) {
@@ -786,6 +760,8 @@ function renderStats() {
   els.streakDays.textContent = `${state.progress.streak} 天`;
   els.heartCount.textContent = state.progress.hearts;
   els.studyTimeText.textContent = formatStudyDuration(state.progress.studySeconds);
+  renderProfileCourse();
+  renderMonthGrid();
 }
 
 function renderCurrentArticle() {
@@ -795,6 +771,7 @@ function renderCurrentArticle() {
     article.type === "custom_reading" ? "自定义课程" : article.unitMode === "sentence" ? "句子级题库" : "本地题库";
   els.articleTitle.textContent = article.title;
   renderMap();
+  renderProfileCourse();
 }
 
 function renderMap() {
@@ -815,19 +792,29 @@ function renderMap() {
     nextIndex === -1
       ? "整篇文章已完成，可以重练巩固。"
       : `下一关：第 ${heroIndex} ${unitCopy} · ${article.paragraphs.length} ${unitLabel}课程`;
-  els.profileCourseTitle.textContent = article.title;
 
   els.levelMap.innerHTML = article.paragraphs
     .map((paragraph, index) => {
       const done = completed.has(index);
+      const result = getLessonResult(article.id, index);
       const unlocked = index === 0 || completed.has(index - 1) || done;
       const current = unlocked && !done && (index === 0 || completed.has(index - 1));
       const side = index % 2 === 0 ? "left" : "right";
-      const classes = ["level-card", side, done ? "done" : "", current ? "current" : "", unlocked ? "" : "locked"]
+      const resultClass = done ? getCompletionClass(result) : "";
+      const classes = [
+        "level-card",
+        side,
+        done ? "done" : "",
+        resultClass,
+        current ? "current" : "",
+        unlocked ? "" : "locked"
+      ]
         .filter(Boolean)
         .join(" ");
-      const label = done ? "已完成" : unlocked ? "开始" : "待解锁";
+      const completionLabel = getCompletionLabel(result, done);
+      const label = done ? completionLabel : unlocked ? "开始" : "待解锁";
       const actionLabel = current ? "继续学习" : done ? "重练" : label;
+      const resultPill = done ? `<span class="type-pill result-pill">${completionLabel}</span>` : "";
       return `
         <button class="${classes}" type="button" data-level-index="${index}" ${unlocked ? "" : "disabled"}>
           <span class="level-number">${done ? "✓" : index + 1}</span>
@@ -838,6 +825,7 @@ function renderMap() {
               <span class="type-pill">词汇</span>
               <span class="type-pill">理解</span>
               <span class="type-pill">${paragraph.challenges.length}题</span>
+              ${resultPill}
               <span class="level-start">${actionLabel}</span>
             </div>
           </div>
@@ -849,6 +837,23 @@ function renderMap() {
   els.levelMap.querySelectorAll("[data-level-index]").forEach((button) => {
     button.addEventListener("click", () => startLesson(Number(button.dataset.levelIndex)));
   });
+}
+
+function renderProfileCourse() {
+  const article = getActiveArticle();
+  if (!article || !els.profileCourseHeading) return;
+
+  const completed = getCompletedSet(article.id);
+  const percent = Math.round((completed.size / article.paragraphs.length) * 100);
+  const nextIndex = article.paragraphs.findIndex((_, index) => !completed.has(index));
+  const unitLabel = getUnitLabel(article);
+  const nextText = nextIndex === -1 ? "整篇已完成" : `第 ${nextIndex + 1} 关`;
+
+  els.profileCourseHeading.textContent = article.title;
+  els.profileCourseCount.textContent = `${article.paragraphs.length} ${unitLabel}`;
+  els.profileCourseProgressText.textContent = `${percent}% 完成`;
+  els.profileCourseNextText.textContent = nextText;
+  els.profileCourseProgressBar.style.width = `${percent}%`;
 }
 
 function startLesson(paragraphIndex) {
@@ -866,6 +871,7 @@ function startLesson(paragraphIndex) {
   state.selectedChoiceIndex = null;
   state.orderSelection = [];
   state.currentResult = null;
+  clearFeedbackTimer();
   state.lessonStats = {
     correct: 0,
     wrong: 0,
@@ -1049,29 +1055,7 @@ function renderTranslationChallenge(challenge) {
       showToast("先写下你的中文理解。");
       return;
     }
-
-    els.feedbackBar.className = "feedback-bar success";
-    els.feedbackBar.innerHTML = `
-      <strong>对照参考要点</strong>
-      <p>${escapeHTML(challenge.explanation)}</p>
-      <ul class="reference-points">
-        ${challenge.referencePoints.map((point) => `<li>${escapeHTML(point)}</li>`).join("")}
-      </ul>
-      <div class="actions">
-        <button id="selfPassBtn" class="primary-btn" type="button">基本正确</button>
-        <button id="retryTranslationBtn" class="secondary-btn" type="button">再练一次</button>
-      </div>
-    `;
-    els.feedbackBar.classList.remove("hidden");
-
-    els.feedbackBar.querySelector("#selfPassBtn").addEventListener("click", () => {
-      finishChallenge(true, challenge.xp, "翻译已完成。正式题库可加入参考译文和关键词判分。");
-    });
-
-    els.feedbackBar.querySelector("#retryTranslationBtn").addEventListener("click", () => {
-      hideFeedback();
-      els.challengeCard.querySelector("#translationInput").focus();
-    });
+    finishChallenge(true, challenge.xp, challenge.explanation);
   });
 }
 
@@ -1105,14 +1089,23 @@ function finishChallenge(correct, xp, explanation) {
 function showFinalFeedback(result) {
   els.feedbackBar.className = `feedback-bar ${result.correct ? "success" : "error"}`;
   els.feedbackBar.innerHTML = `
-    <strong>${escapeHTML(result.title)} · +${result.xp} XP</strong>
-    <p>${escapeHTML(result.message)}</p>
-    <div class="actions">
-      <button id="continueBtn" class="primary-btn" type="button">继续</button>
+    <div class="feedback-head">
+      <strong>${escapeHTML(result.title)} · +${result.xp} XP</strong>
+      <span>${Math.round(FEEDBACK_DURATION_MS / 1000)}s</span>
     </div>
+    <p>${escapeHTML(result.message)}</p>
+    <div class="feedback-meter" aria-hidden="true"><span></span></div>
   `;
   els.feedbackBar.classList.remove("hidden");
-  els.feedbackBar.querySelector("#continueBtn").addEventListener("click", continueLesson);
+  scheduleAutoContinue();
+}
+
+function scheduleAutoContinue() {
+  clearFeedbackTimer();
+  state.feedbackTimer = window.setTimeout(() => {
+    state.feedbackTimer = null;
+    continueLesson();
+  }, FEEDBACK_DURATION_MS);
 }
 
 function continueLesson() {
@@ -1139,6 +1132,8 @@ function completeLesson() {
   const completed = getCompletedSet(article.id);
   completed.add(state.activeParagraphIndex);
   state.progress.completed[article.id] = [...completed].sort((a, b) => a - b);
+  saveLessonResult(article.id, state.activeParagraphIndex, elapsed);
+  updateDailyProgress(elapsed);
   state.progress.hearts = Math.min(5, state.progress.hearts + 1);
   state.progress.studySeconds += elapsed;
   saveProgress();
@@ -1168,6 +1163,7 @@ function renderSummary(elapsedOverride) {
 function setScreen(screen) {
   state.screen = screen;
   document.body.dataset.screen = screen;
+  if (screen !== "lesson") clearFeedbackTimer();
   [els.mapScreen, els.profileScreen, els.lessonScreen, els.summaryScreen].forEach((element) =>
     element.classList.remove("active")
   );
@@ -1189,7 +1185,6 @@ function setActiveTab(tab) {
   document.body.dataset.tab = tab;
   [
     ["quest", els.tabQuest],
-    ["import", els.tabImport],
     ["me", els.tabMe]
   ].forEach(([name, element]) => {
     element.classList.toggle("active", name === tab);
@@ -1210,8 +1205,15 @@ function applyLessonFontSize() {
 }
 
 function hideFeedback() {
+  clearFeedbackTimer();
   els.feedbackBar.className = "feedback-bar hidden";
   els.feedbackBar.innerHTML = "";
+}
+
+function clearFeedbackTimer() {
+  if (!state.feedbackTimer) return;
+  window.clearTimeout(state.feedbackTimer);
+  state.feedbackTimer = null;
 }
 
 function getActiveArticle() {
@@ -1244,6 +1246,104 @@ function getCompletedSet(articleId) {
   return new Set(state.progress.completed[articleId] || []);
 }
 
+function getLessonResult(articleId, index) {
+  return state.progress.lessonResults?.[articleId]?.[String(index)] || null;
+}
+
+function getCompletionClass(result) {
+  if (!result) return "done-legacy";
+  return result.wrong === 0 ? "done-perfect" : "done-review";
+}
+
+function getCompletionLabel(result, done) {
+  if (!done) return "";
+  if (!result) return "已完成";
+  return result.wrong === 0 ? "满分" : "有错题";
+}
+
+function saveLessonResult(articleId, index, elapsed) {
+  const stats = state.lessonStats;
+  const articleResults = state.progress.lessonResults[articleId] || {};
+  articleResults[String(index)] = {
+    answered: stats.answered,
+    correct: stats.correct,
+    wrong: stats.wrong,
+    xp: stats.xp,
+    elapsed,
+    perfect: stats.wrong === 0,
+    completedAt: new Date().toISOString()
+  };
+  state.progress.lessonResults[articleId] = articleResults;
+}
+
+function updateDailyProgress(elapsed) {
+  const today = getDateKey(new Date());
+  const lastDate = state.progress.lastStudyDate;
+  const todayEntry = state.progress.checkins[today] || { completed: 0, xp: 0, seconds: 0 };
+
+  todayEntry.completed += 1;
+  todayEntry.xp += state.lessonStats.xp;
+  todayEntry.seconds += elapsed;
+  state.progress.checkins[today] = todayEntry;
+
+  if (lastDate !== today) {
+    state.progress.streak = isYesterday(lastDate, today) ? state.progress.streak + 1 : 1;
+    state.progress.lastStudyDate = today;
+  }
+}
+
+function renderMonthGrid() {
+  if (!els.monthGrid) return;
+
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const leadBlanks = (new Date(year, month, 1).getDay() + 6) % 7;
+  const monthName = `${year}年${month + 1}月`;
+  const completedDays = Object.keys(state.progress.checkins).filter((key) => {
+    const [keyYear, keyMonth] = key.split("-").map(Number);
+    return keyYear === year && keyMonth === month + 1 && state.progress.checkins[key]?.completed > 0;
+  }).length;
+
+  els.monthLabel.textContent = monthName;
+  els.monthSummary.textContent = `${completedDays} 天完成`;
+
+  const cells = [];
+  for (let index = 0; index < leadBlanks; index += 1) {
+    cells.push('<span class="month-day empty" aria-hidden="true"></span>');
+  }
+
+  for (let day = 1; day <= daysInMonth; day += 1) {
+    const key = getDateKey(new Date(year, month, day));
+    const entry = state.progress.checkins[key];
+    const completed = Boolean(entry?.completed);
+    const today = key === getDateKey(now);
+    const label = completed ? `${day}日，已完成${entry.completed}关` : `${day}日`;
+    cells.push(`
+      <span class="month-day ${completed ? "completed" : ""} ${today ? "today" : ""}" aria-label="${label}">
+        ${day}
+      </span>
+    `);
+  }
+
+  els.monthGrid.innerHTML = cells.join("");
+}
+
+function getDateKey(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function isYesterday(lastDate, today) {
+  if (!lastDate) return false;
+  const last = new Date(`${lastDate}T00:00:00`);
+  const current = new Date(`${today}T00:00:00`);
+  return Math.round((current - last) / 86400000) === 1;
+}
+
 function showToast(message) {
   els.toast.textContent = message;
   els.toast.classList.remove("hidden");
@@ -1252,6 +1352,7 @@ function showToast(message) {
 }
 
 function formatStudyDuration(seconds) {
+  if (seconds < 60) return `${seconds}秒`;
   const minutes = Math.floor(seconds / 60);
   if (minutes < 60) return `${minutes}分`;
   const hours = Math.floor(minutes / 60);
