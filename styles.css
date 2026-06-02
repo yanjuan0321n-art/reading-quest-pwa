@@ -203,7 +203,6 @@ textarea:focus {
 
 .title-icon svg,
 .btn-icon svg,
-.icon-btn svg,
 .ghost-btn svg,
 .tab-button svg {
   width: 100%;
@@ -212,7 +211,6 @@ textarea:focus {
 
 .title-icon path,
 .btn-icon path,
-.icon-btn path,
 .ghost-btn path,
 .tab-button path {
   fill: none;
@@ -281,7 +279,6 @@ textarea {
   white-space: nowrap;
 }
 
-.icon-btn,
 .ghost-btn {
   display: inline-grid;
   place-items: center;
@@ -294,11 +291,6 @@ textarea {
   border-radius: var(--radius);
 }
 
-.icon-btn {
-  margin-left: auto;
-}
-
-.icon-btn:active,
 .ghost-btn:active,
 .primary-btn:active,
 .secondary-btn:active,
@@ -455,18 +447,6 @@ textarea {
   display: grid;
   gap: 12px;
   padding: 4px 0 24px;
-}
-
-.level-map::before {
-  position: absolute;
-  top: 28px;
-  bottom: 40px;
-  left: 50%;
-  width: 4px;
-  content: "";
-  background: #d9e4ee;
-  border-radius: 999px;
-  transform: translateX(-50%);
 }
 
 .level-card {

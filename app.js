@@ -12,7 +12,6 @@ const els = {
   studyTimeText: document.querySelector("#studyTimeText"),
   articleSelect: document.querySelector("#articleSelect"),
   backToMapBtn: document.querySelector("#backToMapBtn"),
-  resetProgressBtn: document.querySelector("#resetProgressBtn"),
   articleKicker: document.querySelector("#articleKicker"),
   articleTitle: document.querySelector("#articleTitle"),
   mapScreen: document.querySelector("#mapScreen"),
@@ -290,25 +289,6 @@ function bindEvents() {
   els.backToMapBtn.addEventListener("click", () => {
     setScreen("map");
     renderMap();
-  });
-
-  els.resetProgressBtn.addEventListener("click", () => {
-    const confirmed = window.confirm("确定重置 XP、能量和所有关卡进度吗？");
-    if (!confirmed) return;
-    state.progress = {
-      xp: 0,
-      streak: 1,
-      hearts: 5,
-      studySeconds: 0,
-      completed: {},
-      lessonResults: {},
-      checkins: {},
-      lastStudyDate: ""
-    };
-    saveProgress();
-    renderStats();
-    renderCurrentArticle();
-    showToast("学习进度已重置。");
   });
 
   els.summaryMapBtn.addEventListener("click", () => {
